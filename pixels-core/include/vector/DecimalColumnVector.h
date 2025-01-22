@@ -27,6 +27,9 @@ class DecimalColumnVector : public ColumnVector {
     void print(int rowCount) override;
     void close() override;
     void * current() override;
+    void add(std::string &value) override;
+    void ensureSize(uint64_t size, bool preserveData) override;
+    void add(int64_t value) override;
 	int getPrecision();
 	int getScale();
 };

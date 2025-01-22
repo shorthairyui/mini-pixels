@@ -7,6 +7,12 @@
 
 #include "vector/ColumnVector.h"
 #include "vector/VectorizedRowBatch.h"
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <algorithm>
+#include <stdlib.h>
 
 class TimestampColumnVector: public ColumnVector {
 public:
@@ -23,6 +29,10 @@ public:
     ~TimestampColumnVector();
     void print(int rowCount) override;
     void close() override;
+    void ensureSize(uint64_t size, bool preserveData) override;
+    void add(std::string &value) override;
+    void add(int64_t value) override;
+    long stringTimestampToSeconds(const std::string& timestamp);
 private:
     bool isLong;
 };

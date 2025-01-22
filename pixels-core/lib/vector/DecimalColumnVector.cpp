@@ -45,9 +45,13 @@ DecimalColumnVector::DecimalColumnVector(uint64_t len, int precision, int scale,
         memoryUsage += (uint64_t)sizeof(int32_t) * len;
     } else if (precision <= Decimal::MAX_WIDTH_INT64) {
         physical_type_ = PhysicalType::INT64;
+        posix_memalign(reinterpret_cast<void **>(&vector), 32,
+                       len * sizeof(int64_t));
         memoryUsage += (uint64_t)sizeof(uint64_t) * len;
     } else if (precision <= Decimal::MAX_WIDTH_INT128) {
         physical_type_ = PhysicalType::INT128;
+        posix_memalign(reinterpret_cast<void **>(&vector), 32,
+                       len * sizeof(int64_t));
         memoryUsage += (uint64_t)sizeof(uint64_t) * len;
     } else {
         throw std::runtime_error(
@@ -94,4 +98,83 @@ int DecimalColumnVector::getPrecision() {
 
 int DecimalColumnVector::getScale() {
 	return scale;
+}
+
+void DecimalColumnVector::add(std::string &value){
+    if(writeIndex > length){
+        ensureSize(writeIndex * 2,true);
+    }
+     // 用于存储转换后的未缩放整数值
+    int64_t unscaled_value = 0;
+
+    try {
+        size_t dot_pos = value.find('.');
+
+        if (dot_pos != std::string::npos) {
+            // 有小数点的情况
+            std::string int_part = value.substr(0, dot_pos);  // 获取整数部分
+            std::string frac_part = value.substr(dot_pos + 1);  // 获取小数部分
+            std::cout<<"int_part: "<<int_part<<" frac_part: "<<frac_part<<std::endl;
+            // 检查小数部分长度是否超出精度要求
+            if (frac_part.length() > scale) {
+                throw std::invalid_argument("Decimal string exceeds scale.");
+            }
+
+            // 计算未缩放的整数值
+            // 将整数部分与小数部分合并后转换为整数
+            unscaled_value = std::stoll(int_part + frac_part);
+            std::cout<<"unscaled_value: "<<unscaled_value<<std::endl;
+            // 将小数部分补充到精度要求的位数
+            for (size_t i = 0; i < scale - frac_part.length(); ++i) {
+                unscaled_value *= 10;
+            }
+            std::cout<<"unscaled_value2: "<<unscaled_value<<std::endl;
+        } else {
+            // 没有小数点的情况，直接转换为整数
+            unscaled_value = std::stoll(value);
+        }
+    } catch (const std::exception &e) {
+        throw std::invalid_argument("Invalid decimal string: " + value);
+    }
+    // 更新写入索引
+    int index = writeIndex++;
+    // 根据精度确定物理类型并将值存储到 vector 中
+    switch (physical_type_) {
+        case PhysicalType::INT16:
+            vector[index] = static_cast<int16_t>(unscaled_value);
+            break;
+        case PhysicalType::INT32:
+            vector[index] = static_cast<int32_t>(unscaled_value);
+            break;
+        case PhysicalType::INT64:
+            vector[index] = unscaled_value;
+            break;
+        case PhysicalType::INT128:
+            // INT128 类型的处理，如果需要处理超大值
+            // 这里假设存储的是 int64_t 最大范围内的值
+            vector[index] = unscaled_value;
+            break;
+        default:
+            throw std::invalid_argument("Unsupported physical type for decimal column");
+    }
+    isNull[index]=false;
+}
+
+void DecimalColumnVector::add(int64_t value){
+
+}
+
+void DecimalColumnVector::ensureSize(uint64_t size, bool preserveData){
+    ColumnVector::ensureSize(size, preserveData);
+    if (length < size) {
+        long *oldVector = vector;
+        posix_memalign(reinterpret_cast<void **>(&vector), 32,
+                        size * sizeof(int64_t));
+        if (preserveData) {
+            std::copy(oldVector, oldVector + length, vector);
+        }
+        delete[] oldVector;
+        memoryUsage += (long) sizeof(long) * (size - length);
+        resize(size);
+    }
 }

@@ -24,6 +24,9 @@
 //#include "writer/ColumnWriterBuilder.h"
 #include "writer/ColumnWriterBuilder.h"
 #include "writer/IntegerColumnWriter.h"
+#include "writer/DateColumnWriter.h"
+#include "writer/DecimalColumnWriter.h"
+#include "writer/TimestampColumnWriter.h"
 
 std::shared_ptr<ColumnWriter> ColumnWriterBuilder::newColumnWriter(std::shared_ptr<TypeDescription> type, std::shared_ptr<PixelsWriterOption> writerOption) {
     switch(type->getCategory()) {
@@ -40,10 +43,16 @@ std::shared_ptr<ColumnWriter> ColumnWriterBuilder::newColumnWriter(std::shared_p
             break;
         case TypeDescription::DOUBLE:
             break;
+        case TypeDescription::DECIMAL:
+            return std::make_shared<DecimalColumnWriter>(type,writerOption);
         case TypeDescription::STRING:
             break;
+        case TypeDescription::DATE:
+            return std::make_shared<DateColumnWriter>(type, writerOption);
         case TypeDescription::TIME:
             break;
+        case TypeDescription::TIMESTAMP://TimestampColumnVector
+            return std::make_shared<TimestampColumnWriter>(type, writerOption);
         case TypeDescription::VARBINARY:
             break;
         case TypeDescription::BINARY:
@@ -56,4 +65,23 @@ std::shared_ptr<ColumnWriter> ColumnWriterBuilder::newColumnWriter(std::shared_p
     return std::shared_ptr<ColumnWriter>();
 }
 
+// enum Category {
+//         BOOLEAN,
+//         BYTE,
+//         SHORT,
+//         INT,
+//         LONG,
+//         FLOAT,
+//         DOUBLE,
+//         DECIMAL,
+//         STRING,
+//         DATE,
+//         TIME,
+//         TIMESTAMP,
+//         VARBINARY,
+//         BINARY,
+//         VARCHAR,
+//         CHAR,
+//         STRUCT
+//     };
 

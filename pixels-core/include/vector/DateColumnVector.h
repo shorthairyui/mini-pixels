@@ -7,6 +7,8 @@
 
 #include "vector/ColumnVector.h"
 #include "vector/VectorizedRowBatch.h"
+#include <ctime>
+#include <sstream>
 
 class DateColumnVector: public ColumnVector {
 public:
@@ -15,8 +17,6 @@ public:
      * representation in Presto.
 	 */
 	int * dates;
-
-
 	/**
     * Use this constructor by default. All column vectors
     * should normally be the default size.
@@ -27,6 +27,10 @@ public:
 	void print(int rowCount) override;
 	void close() override;
 	void set(int elementNum, int days);
+	void ensureSize(uint64_t size, bool preserveData) override;
+	void add(int value) override;
+	//void add(int64_t value) override;
+	void add(std::string &value) override;
 };
 
 #endif // DUCKDB_DATECOLUMNVECTOR_H
