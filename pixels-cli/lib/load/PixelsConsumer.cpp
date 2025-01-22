@@ -98,7 +98,8 @@ void PixelsConsumer::run() {
                 }
                 if (initPixelsFile) {
                     LocalFS targetStorage;
-                    targetFileName = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())) + ".pxl";
+                    targetFileName = std::to_string(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())) + \
+                                "_" + std::to_string(this->loadedFiles.size()) +".pxl";
                     targetFilePath = targetPath + targetFileName;
                     pixelsWriter = std::make_shared<PixelsWriterImpl>(schema, pixelsStride, rowGroupSize, targetFilePath, blockSize,
                                                                       true, encodingLevel, nullPadding,false, 1);

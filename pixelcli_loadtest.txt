@@ -1,0 +1,5 @@
+LOAD -o /mnt/d/作业文件夹/实用数据库/mini-pixels/in  -t /mnt/d/作业文件夹/实用数据库/mini-pixels/out -s struct<a:date> -n 50 -r \|
+
+LOAD -o /mnt/d/作业文件夹/实用数据库/mini-pixels/in  -t /mnt/d/作业文件夹/实用数据库/mini-pixels/out -s struct<a:decimal(10,2)> -n 10 -r \|
+
+LOAD -o /mnt/d/作业文件夹/实用数据库/mini-pixels/in  -t /mnt/d/作业文件夹/实用数据库/mini-pixels/out -s struct<a:timestamp> -n 50 -r \|
