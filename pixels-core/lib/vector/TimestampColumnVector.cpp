@@ -9,13 +9,16 @@ TimestampColumnVector::TimestampColumnVector(int precision, bool encoding): Colu
 }
 
 TimestampColumnVector::TimestampColumnVector(uint64_t len, int precision, bool encoding): ColumnVector(len, encoding) {
+    std::cout<<precision<<std::endl;
     this->precision = precision;
     if(encoding) {
         posix_memalign(reinterpret_cast<void **>(&this->times), 64,
                        len * sizeof(long));
     } else {
-        this->times = nullptr;
+        posix_memalign(reinterpret_cast<void **>(&this->times), 64,
+                       len * sizeof(long));
     }
+    memoryUsage += (long) sizeof(long) * len;
 }
 
 
@@ -64,4 +67,59 @@ void TimestampColumnVector::set(int elementNum, long ts) {
     }
     times[elementNum] = ts;
     // TODO: isNull
+    isNull[elementNum] = NULL;
+}
+
+long TimestampColumnVector::stringTimestampToSeconds(const std::string& value) {
+    struct std::tm tm {};
+    if (strptime(value.c_str(), "%Y-%m-%d %H:%M:%S", &tm)) {
+        std::time_t time = std::mktime(&tm);
+        
+        long timestamp = static_cast<long>(time) + 8 *3600;
+
+        if(precision == 0)
+            precision = 6;
+
+        if (precision == 3) { // 毫秒
+            timestamp *= 1000;
+        } else if (precision == 6) { // 微秒
+            timestamp *= 1000000;
+        }
+
+        return timestamp;
+    } else {
+        std::cerr << "Failed to parse date string: " << value << std::endl;
+    }
+}
+
+void TimestampColumnVector::ensureSize(uint64_t size, bool preserveData) {
+    ColumnVector::ensureSize(size, preserveData);
+    if (length < size) {
+		long *oldVector = times;
+        posix_memalign(reinterpret_cast<void **>(&times), 32,
+                        size * sizeof(int64_t));
+        if (preserveData) {
+            std::copy(oldVector, oldVector + length, times);
+        }
+        delete[] oldVector;
+        memoryUsage += (long) sizeof(long) * (size - length);
+        resize(size);
+    }
+}
+
+void TimestampColumnVector::add(std::string &value) {
+    if(writeIndex >= length){
+        ensureSize(writeIndex * 2, true);
+    }
+   std::cout<<"stringTimestampToSeconds"<<stringTimestampToSeconds(value)<<std::endl;
+   set(writeIndex++,stringTimestampToSeconds(value));//这里不对
+}
+
+void TimestampColumnVector::add(int64_t value) {
+    if (writeIndex >= length) {
+        ensureSize(writeIndex * 2, true);  
+    }
+    int index = writeIndex++;
+    times[index] = value;
+    isNull[index] = false;    
 }
